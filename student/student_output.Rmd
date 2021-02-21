@@ -1,0 +1,76 @@
+---
+title: "student_output"
+author: "Ningyuan Wang"
+date: "11/11/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(data.table)
+library(kableExtra) #  beautiful table
+library(MASS) # model selection
+```
+
+### Data preoprocessing 
+
+```{r}
+student = read.csv("student-mat.csv",sep=";",header=TRUE)
+student$abs_grp<- ifelse(student$absences >= 3,"Treatment", "Control")
+student$g3_grades <- ifelse(student$G3>=16, "A",
+                            ifelse(student$G3>=14, "B",
+                            ifelse(student$G3>=12, "C",
+                            ifelse(student$G3>=10, "D", "F"))))
+```
+
+### Understanding the data
+
+```{r}
+# on a categorical level: absence~grade
+table(student$abs_grp, student$g3_grades)
+chisq.test(student$abs_grp, student$g3_grades)
+
+# on a continuous level: absence~grade
+tapply(student$G3, student$abs_grp, mean)# 9.748634 10.990566 
+t.test(student$G3 ~ student$abs_grp) # significant
+```
+### Visulazing the data
+```{r}
+# G3 scores
+ggplot(student, aes(x=G3)) + 
+  geom_histogram(aes(y=..density..))+
+  geom_density(alpha=0.25)
+
+# absences
+table(student$G3)/nrow(student)*100
+table(student$absences)
+```
+
+```{r}
+# associated factors of absences
+full.abs = lm(absences ~ school + sex + age + address + famsize + Pstatus + factor(Medu) +
+     factor(Fedu) + Mjob + Fjob + reason + guardian + traveltime +      factor(studytime) + factor(failures) + schoolsup + famsup +        paid + activities +nursery + higher + internet + romantic +        factor(famrel) + factor(freetime) + factor(goout) + factor(Dalc) + factor(Walc) + factor(health), data = student)
+
+step.abs <- stepAIC(full.abs, direction = "both", 
+                      trace = FALSE)
+summary(step.abs)
+
+```
+```{r}
+# temporary test: LATER
+chisq.test(student$school, student$abs_grp)
+t.test(student$age ~ student$abs_grp)
+```
+
+```{r}
+# make table: LATER
+tt = data.table(x=c(1,2, 3), y=c(2, 3, 4))
+kable(tt)
+```
+Since two samples have different students, and the difference between two samples is not large enough. To estimate the causal effect of absence on the final grade precisely, we have to use inverse prooensity score to make better estimation.
+### IPW
+```{r}
+
+```
+
